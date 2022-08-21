@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.1.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+
+	<bean id="roboAdvisorQuartzScheduler"
+		  class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<!-- <property name="dataSource" ref="masterDataSource"/> -->
+		<property name="applicationContextSchedulerContextKey" value="applicationContext"/>
+		<property name="waitForJobsToCompleteOnShutdown" value="true"/>
+		<property name="startupDelay" value="5"/>
+		<property name="transactionManager" ref="transactionManager"/>
+		<property name="autoStartup" value="${cron.enabled}"/>
+		<property name="globalJobListeners">
+        <list>
+        	<ref bean="cronJobListener" />
+        </list>
+    	</property>
+		<property name="jobDetails">
+			<list>
+			<ref bean="portfolioReassignJob"/>
+			<ref bean="globalPortfolioReassignJob"/>
+			<ref bean="tradeCreationJob"/>
+			<ref bean="globalTradeCreationJob"/>	
+			<ref bean="inventoryTradeJob"/>	
+			<ref bean="globalInventoryTradeJob"/>
+			<ref bean="placeOrderJob"/>
+			<ref bean="globalPlaceOrderJob"/>
+	        <ref bean="dailyJob"/>
+ 			<ref bean="monthlyJob"/>
+			<ref bean="updateRateJob"/>
+			<!-- <ref bean="userPortfolioDailyStatusJob"/> -->
+			<ref bean="checkInstrumentPriceAvailabilityJob"/>
+			<ref bean="checkGlobalInstrumentPriceAvailabilityJob"/>
+			<ref bean="checkExchangeRateAvailabilityJob"/>
+			<!-- <ref bean="behaviourDetectionJob"/>  -->
+			
+			<!-- <ref bean="placeOrderErrorRetryJob"/>
+			<ref bean="closeOrderJob"/>
+			<ref bean="closeOrderErrorRetryJob"/>
+	 		<ref bean="paymentInitiationJob"/>
+ 			<ref bean="paymentInitiationErrorRetryJob"/>
+ 			<ref bean="fundPortfolioJob"/> 
+ 			<ref bean="portfolioFundReleaseJob"/> -->
+			</list>
+		</property>
+		<property name="triggers">
+			<list>
+			<ref bean="portfolioReassignJobTrigger"/>
+			<ref bean="globalPortfolioReassignJobTrigger"/>
+			<ref bean="tradeCreationJobTrigger"/>
+			<ref bean="globalTradeCreationJobTrigger"/>	
+			<ref bean="inventoryTradeJobTrigger"/>
+			<ref bean="globalInventoryTradeJobTrigger"/>
+		 	<ref bean="placeOrderJobTrigger"/> 
+		 	<ref bean="globalPlaceOrderJobTrigger"/> 
+            <ref bean="dailyJobTrigger"/>
+ 			<ref bean="monthlyJobTrigger"/>
+			<ref bean="updateRateJobTrigger"/>
+			<!-- <ref bean="userPortfolioDailyStatusJobTrigger"/> -->
+			<ref bean="checkInstrumentPriceAvailabilityJobTrigger"/>
+			<ref bean="checkGlobalInstrumentPriceAvailabilityJobTrigger"/>
+			<ref bean="checkExchangeRateAvailabilityJobTrigger"/>
+			<!-- <ref bean="behaviourDetectionJobTrigger"/>  -->
+			<!-- <ref bean="placeOrderErrorRetryJobTrigger"/>
+			<ref bean="closeOrderJobTrigger"/> 
+			<ref bean="closeOrderErrorRetryJobTrigger"/>
+			<ref bean="paymentInitiationJobTrigger"/> 
+	 		<ref bean="paymentInitiationErrorRetryJobTrigger"/> 
+			<ref bean="fundPortfolioJobTrigger"/> 
+			<ref bean="portfolioFundReleaseJobTrigger"/>  -->
+			</list>
+		</property>
+	</bean>
+
+	<bean id="cronJobListener"
+            class="my.airo.roboadvisor.common.jobs.CronJobListener">
+    </bean>
+
+	<bean name="portfolioReassignJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.PortfolioReassignJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="portfolioReassignJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="portfolioReassignJob"/>
+		<property name="cronExpression" value="${scheduler.portfolioReassign.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="globalPortfolioReassignJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.GlobalPortfolioReassignJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="globalPortfolioReassignJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="globalPortfolioReassignJob"/>
+		<property name="cronExpression" value="${scheduler.globalPortfolioReassign.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="tradeCreationJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.TradeCreationJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="tradeCreationJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="tradeCreationJob"/>
+		<property name="cronExpression" value="${scheduler.tradeCreation.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="globalTradeCreationJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.GlobalTradeCreationJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="globalTradeCreationJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="globalTradeCreationJob"/>
+		<property name="cronExpression" value="${scheduler.globalTradeCreation.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="inventoryTradeJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.InventoryTradeJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="inventoryTradeJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="inventoryTradeJob"/>
+		<property name="cronExpression" value="${scheduler.inventoryTrade.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="globalInventoryTradeJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.GlobalInventoryTradeJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="globalInventoryTradeJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="globalInventoryTradeJob"/>
+		<property name="cronExpression" value="${scheduler.globalInventoryTrade.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="placeOrderJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.PlaceOrderJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="placeOrderJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="placeOrderJob"/>
+		<property name="cronExpression" value="${scheduler.placeOrder.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="globalPlaceOrderJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.GlobalPlaceOrderJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="globalPlaceOrderJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="globalPlaceOrderJob"/>
+		<property name="cronExpression" value="${scheduler.globalPlaceOrder.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="dailyJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="my.airo.roboadvisor.common.jobs.DailyJob"/>
+        <property name="durability" value="true"/>
+    </bean>
+    <bean name="dailyJobTrigger"
+          class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="dailyJob"/>
+        <property name="cronExpression" value="${scheduler.daily.cron}"/>
+        <property name="misfireInstruction" value="2"/>
+    </bean>
+	
+	<bean name="monthlyJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.MonthlyJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="monthlyJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="monthlyJob"/>
+		<property name="cronExpression" value="${scheduler.monthly.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="updateRateJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.UpdateRateJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="updateRateJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="updateRateJob"/>
+		<property name="cronExpression" value="${scheduler.updateRate.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+
+	<bean name="checkInstrumentPriceAvailabilityJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.CheckInstrumentPriceAvailabilityJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="checkInstrumentPriceAvailabilityJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="checkInstrumentPriceAvailabilityJob"/>
+		<property name="cronExpression" value="${scheduler.checkInstrumentPriceAvailabilityJob.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	
+	<bean name="checkGlobalInstrumentPriceAvailabilityJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.CheckGlobalInstrumentPriceAvailabilityJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="checkGlobalInstrumentPriceAvailabilityJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="checkGlobalInstrumentPriceAvailabilityJob"/>
+		<property name="cronExpression" value="${scheduler.checkGlobalInstrumentPriceAvailabilityJob.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="checkExchangeRateAvailabilityJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.CheckExchangeRateAvailabilityJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="checkExchangeRateAvailabilityJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="checkExchangeRateAvailabilityJob"/>
+		<property name="cronExpression" value="${scheduler.checkExchangeRateAvailabilityJob.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+	<bean name="behaviourDetectionJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="my.airo.roboadvisor.common.jobs.BehaviourDetectionJob"/>
+		<property name="durability" value="true"/>
+	</bean>
+	<bean name="behaviourDetectionJobTrigger"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="behaviourDetectionJob"/>
+		<property name="cronExpression" value="${scheduler.behaviourDetection.cron}"/>
+		<property name="misfireInstruction" value="2"/>
+	</bean>
+	
+</beans>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+           http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+           http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.0.xsd">
+
+	<!-- ################################### WEB STUFF ################################### -->
+	<!-- <context:component-scan base-package="my.airo.roboadvisor" />
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+	<tx:annotation-driven />
+	<mvc:cors>
+	<mvc:mapping path="/**" allowed-origins="*"
+		allowed-headers="Content-Type,Accept,av,Access-Control-Allow-Origin, Access-Control-Allow-Headers, Authorization, X-Requested-With, requestId, Correlation-Id"
+		allowed-methods="GET, PUT, POST, DELETE" />
+    </mvc:cors>
+	<mvc:annotation-driven>
+		<mvc:async-support default-timeout="10000"
+			task-executor="executor" /> timeout every 10 secs
+
+    <mvc:message-converters>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="objectMapper">
+                    <bean class="my.airo.roboadvisor.infra.web.jackson.ThirdPartyAwareObjectMapper"></bean>
+                </property>
+            </bean>
+     </mvc:message-converters> 
+	</mvc:annotation-driven>
+
+	<context:annotation-config />
+	<context:property-placeholder location="classpath:config.properties,classpath:profile_question.properties,classpath:scheduler.properties,classpath:database.properties,classpath:terms_conditions.properties,classpath:faq.properties,classpath:account_statement.properties" />
+
+	Common application stuff
+	<mvc:interceptors>
+		<bean
+			class="my.airo.roboadvisor.infra.controller.interceptor.UserOperationContextInterceptor" />
+		<bean class="my.airo.roboadvisor.infra.controller.interceptor.SecurityInterceptor" />
+		<bean class="my.airo.roboadvisor.infra.controller.interceptor.CommonInterceptor" />
+	</mvc:interceptors>
+
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix">
+			<value>/WEB-INF/jsp/</value>
+		</property>
+		<property name="suffix">
+			<value>.jsp</value>
+		</property>
+	</bean>
+
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basenames">
+			<list>
+				<value>WEB-INF/i18n/messages</value>
+				<value>classpath:profile_question</value>
+				<value>classpath:account_statement</value>
+			</list>
+		</property>
+		<property name="defaultEncoding" value="UTF-8" />
+		<property name="fallbackToSystemLocale" value="false" />
+	</bean> -->
+
+</beans> 

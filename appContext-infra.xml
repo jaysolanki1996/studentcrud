@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.1.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+
+	<!-- ################################### APP STUFF ################################### -->
+	<context:component-scan base-package="my.airo.roboadvisor" /> 
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+	<tx:annotation-driven />
+	<context:annotation-config />
+	<context:property-placeholder location="classpath:config.properties,classpath:profile_question.properties,classpath:scheduler.properties,classpath:database.properties,classpath:terms_conditions.properties,classpath:faq.properties,classpath:account_statement.properties,classpath:instrument_color.properties" />
+	
+	<task:annotation-driven executor="executor"
+		scheduler="scheduler" />
+	<task:executor id="executor" pool-size="10" />
+	<task:scheduler id="scheduler" pool-size="10" />
+
+	<!-- <cache:annotation-driven /> -->
+	<!-- Security / SSL -->
+	<security:http auto-config="true">
+		<security:port-mappings>
+			<security:port-mapping http="80" https="443" />
+		</security:port-mappings>
+		<security:csrf disabled="true" request-matcher-ref="csrfSecurityRequestMatcher" />
+		<security:headers>
+            <security:frame-options policy="SAMEORIGIN"/>
+            <!-- <security:xss-protection /> -->
+        </security:headers>
+	</security:http>
+
+	<security:authentication-manager>
+		<security:authentication-provider>
+			<security:user-service>
+				<security:user name="user" password="password"
+					authorities="ROLE_USER" />
+			</security:user-service>
+		</security:authentication-provider>
+	</security:authentication-manager>
+	<!-- End of SSL -->
+	
+	<mvc:annotation-driven>
+		<mvc:async-support default-timeout="10000"
+			task-executor="executor" /> <!-- timeout every 10 secs -->
+
+    <mvc:message-converters>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="objectMapper">
+                    <bean class="my.airo.roboadvisor.infra.web.jackson.ThirdPartyAwareObjectMapper"></bean>
+                </property>
+            </bean>
+     </mvc:message-converters> 
+	</mvc:annotation-driven>
+	
+	<mvc:interceptors>
+		<bean
+			class="my.airo.roboadvisor.infra.controller.interceptor.UserOperationContextInterceptor" />
+		<bean class="my.airo.roboadvisor.infra.controller.interceptor.SecurityInterceptor" />
+		<bean class="my.airo.roboadvisor.infra.controller.interceptor.CommonInterceptor" />
+	</mvc:interceptors>
+	
+	<!-- *******     For MY,SG Database Start ******* -->
+	
+	<bean id="masterDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${db.driverClassName}" />
+		<property name="jdbcUrl" value="${db.master.url}" />
+		<property name="user" value="${db.master.username}" />
+		<property name="password" value="${db.master.password}" />
+
+		<property name="acquireIncrement" value="${hibernate.c3p0.acquire_increment}" />
+		<property name="idleConnectionTestPeriod" value="${hibernate.c3p0.idle_test_period}" />
+		<property name="maxIdleTime" value="${hibernate.c3p0.timeout}" />
+		<property name="maxStatements" value="${hibernate.c3p0.max_statements}" />
+		<property name="preferredTestQuery" value="${hibernate.c3p0.preferredTestQuery}" />
+
+		<property name="maxPoolSize" value="${db.master.c3p0.max_size}" />
+		<property name="minPoolSize" value="${db.master.c3p0.min_size}" />
+		<property name="privilegeSpawnedThreads" value="true" />
+        <property name="contextClassLoaderSource" value="library" />
+	</bean>
+	<!-- Hibernate SessionFactory org.springframework.orm.hibernate5.LocalSessionFactoryBean 
+		org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean -->
+		
+	<bean id="namingStrategy" class="my.airo.roboadvisor.infra.dao.hibernate.CustomPhysicalNaminStrategyImpl"></bean>	
+		
+	<bean id="masterSessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="masterDataSource" />
+		<property name="packagesToScan">
+			<list>
+				<value>my.airo.roboadvisor</value>
+			</list>
+		</property>
+		<property name="annotatedPackages">
+			<list>
+				<value>my.airo.roboadvisor</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+				<prop key="hibernate.format_sql">${hibernate.format_sql}</prop>
+				<prop key="hibernate.generate_statistics">${hibernate.generate_statistics}</prop>
+				<!-- <prop key="hibernate.hbm2ddl.auto">update</prop> -->
+				<!-- <prop key="hibernate.connection.provider_class">org.hibernate.connection.C3P0ConnectionProvider</prop> -->
+				<prop key="hibernate.cache.provider_class">org.hibernate.cache.EhCacheProvider</prop>
+				<prop key="hibernate.cache.use_second_level_cache">${hibernate.cache.use_second_level_cache}</prop>
+				<prop key="hibernate.cache.use_query_cache">${hibernate.cache.use_query_cache}</prop>
+				<prop key="hibernate.query.substitutions">${hibernate.query.substitutions}</prop>
+				<prop key="hibernate.default_batch_fetch_size">${hibernate.default_batch_fetch_size}</prop>
+				<prop key="hibernate.jdbc.batch_size">${hibernate.jdbc.batch_size}</prop>
+				<prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory</prop>
+				<prop key="hibernate.allow_update_outside_transaction">true</prop>
+			</props>
+		</property>
+		<property name="physicalNamingStrategy" ref="namingStrategy"></property>
+		<!-- <property name="entityCacheStrategies"> <props> </props> </property> 
+			<property name="collectionCacheStrategies"> <props> </props> </property> 
+			<property name="namingStrategy" ref="namingStrategy"/> -->
+	</bean>
+	
+	 
+		<!-- <bean id="namingStrategy" class="my.airo.roboadvisor.infra.dao.hibernate.NamingStrategy"/> -->
+
+	<bean id="hibernateTemplate" class="org.springframework.orm.hibernate5.HibernateTemplate">
+		<property name="sessionFactory" ref="masterSessionFactory" />
+		<property name="cacheQueries" value="${hibernate.cache.use_query_cache}" />
+	</bean>
+	
+	<!-- Transactional -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="masterSessionFactory" />
+	</bean>
+
+	<!-- *******     For MY,SG Database Stop ******* -->
+	
+	<!-- *******     For IO Database Start ******* -->
+	
+	<bean id="rateDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"> 
+		<property name="driverClass" value="${db.driverClassName}"/> 
+		<property name="jdbcUrl" value="${db.rate.url}"/> 
+		<property name="user" value="${db.rate.username}"/> 
+		<property name="password" value="${db.rate.password}"/> 
+		
+		<property name="acquireIncrement" value="${hibernate.c3p0.acquire_increment}"/> 
+		<property name="idleConnectionTestPeriod" value="${hibernate.c3p0.idle_test_period}"/> 
+		<property name="maxIdleTime" value="${hibernate.c3p0.timeout}"/> 
+		<property name="maxStatements" value="${hibernate.c3p0.max_statements}"/> 
+		<property name="preferredTestQuery" value="${hibernate.c3p0.preferredTestQuery}"/> 
+		
+		<property name="maxPoolSize" value="${db.rate.c3p0.max_size}"/> 
+		<property name="minPoolSize" value="${db.rate.c3p0.min_size}"/> 
+		
+		<property name="privilegeSpawnedThreads" value="true" />
+        <property name="contextClassLoaderSource" value="library" />
+	</bean>
+	
+	<bean id="rateSessionFactory" 
+	class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="rateDataSource" />
+		<property name="packagesToScan">
+			<list>
+				<value>my.airo.roboadvisor</value>
+			</list>
+		</property>
+		<property name="annotatedPackages">
+			<list>
+				<value>my.airo.roboadvisor</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+				<prop key="hibernate.format_sql">${hibernate.format_sql}</prop>
+				<prop key="hibernate.generate_statistics">${hibernate.generate_statistics}</prop>
+				<prop key="hibernate.cache.provider_class">org.hibernate.cache.EhCacheProvider</prop>
+				<prop key="hibernate.cache.use_second_level_cache">${hibernate.cache.use_second_level_cache}</prop>
+				<prop key="hibernate.cache.use_query_cache">${hibernate.cache.use_query_cache}</prop>
+				<prop key="hibernate.query.substitutions">${hibernate.query.substitutions}</prop>
+				<prop key="hibernate.default_batch_fetch_size">${hibernate.default_batch_fetch_size}</prop>
+				<prop key="hibernate.jdbc.batch_size">${hibernate.jdbc.batch_size}</prop>
+				<prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory</prop>
+				<prop key="hibernate.allow_update_outside_transaction">true</prop>
+			</props>
+		</property>
+		<property name="physicalNamingStrategy" ref="namingStrategy"></property>
+	</bean>
+	
+	<bean id="rateHibernateTemplate" class="org.springframework.orm.hibernate5.HibernateTemplate"> 
+		<property name="sessionFactory" ref="rateSessionFactory"/> 
+		<property name="cacheQueries" value="${hibernate.cache.use_query_cache}"/> 
+	</bean>
+	
+	<!-- Transactional -->
+	<bean id="transactionManager1"
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="rateSessionFactory" />
+	</bean>
+	<!-- Transactional -->
+	
+	<!-- *******     For IO Database Stop ******* -->
+	
+	<!-- File upload -->
+	<!-- <bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSize" value="10048576" />10MB. more 
+			validation done in service level
+		<property name="maxInMemorySize" value="10048576" />10MB. 
+			more validation done in service level
+	</bean> -->
+	
+	<bean id="filterMultipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">        
+		<property name="maxUploadSize" value="10048576" /><!-- 10MB. more 
+			validation done in service level -->
+		<property name="maxInMemorySize" value="10048576" /><!-- 10MB. 
+			more validation done in service level -->
+	</bean>
+
+	<!-- <bean id="ehcache" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"> 
+		<property name="shared" value="true"/> </bean> <bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager"> 
+		<property name="cacheManager" ref="ehcache"/> </bean> -->
+
+	<!-- <bean id="velocityEngine"
+		class="org.springframework.ui.velocity.VelocityEngineFactoryBean">
+		<property name="velocityProperties">
+			<value>
+				resource.loader=class
+				class.resource.loader.class=org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader
+			</value>
+		</property>
+	</bean> -->
+	
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver">
+    	<property name="defaultLocale" value="en" /> <!--change this-->
+	</bean>
+	
+	<bean id="messageSource"
+        class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="basenames">
+            <list>
+                <value>WEB-INF/i18n/messages</value>
+                <value>classpath:profile_question</value>
+                <value>classpath:account_statement</value>
+                <value>classpath:faq</value>
+                <value>classpath:instrument_color</value>
+            </list>
+        </property>
+        <property name="defaultEncoding" value="UTF-8" />
+        <property name="fallbackToSystemLocale" value="false" />
+    </bean>
+    
+    <!-- *******     Skip csrf security for rest api    ******* -->
+    <bean id="csrfSecurityRequestMatcher"
+		class="my.airo.roboadvisor.filter.CsrfSecurityRequestMatcher"></bean>
+
+	<!-- <bean id="conversionService" class="org.springframework.format.support.FormattingConversionService"> 
+		<property name="addConverter"> <set> <bean class="my.airo.roboadvisor.common.converter.LocalDateConverter"> 
+		<constructor-arg type="java.lang.String" value="yyyy-MM-dd"> </constructor-arg> 
+		</bean> </set> </property> </bean> -->
+		
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix">
+			<value>/WEB-INF/jsp/</value>
+		</property>
+		<property name="suffix">
+			<value>.jsp</value>
+		</property>
+	</bean>
+
+	<bean id="bugsnag" class="com.bugsnag.Bugsnag">
+		<constructor-arg name="apiKey" value="${bugsnag.apikey}" />
+		<property name="appVersion" value="${backend.version}"></property>
+		<property name="releaseStage" value="${conf.app.env}"></property>
+	</bean>
+	
+	<bean id="bugsnagSpringConfiguration" class="com.bugsnag.BugsnagSpringConfiguration"/>
+</beans>
